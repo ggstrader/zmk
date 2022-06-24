@@ -186,6 +186,7 @@ void behavior_tap_dance_timer_handler(struct k_work *item) {
     if (tap_dance->timer_cancelled) {
         return;
     }
+    LOG_DBG("Tap dance has been decided via timer. Counter reached: %d", tap_dance->counter);
     if (tap_dance->config->trigger_each_binding) {
         if (!tap_dance->is_pressed) {
             clear_tap_dance(tap_dance);
@@ -193,7 +194,6 @@ void behavior_tap_dance_timer_handler(struct k_work *item) {
         tap_dance->tap_dance_decided = true;
         return;
     }
-    LOG_DBG("Tap dance has been decided via timer. Counter reached: %d", tap_dance->counter);
     press_tap_dance_behavior(tap_dance, tap_dance->release_at);
     if (tap_dance->is_pressed) {
         return;
