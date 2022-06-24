@@ -147,6 +147,7 @@ static int on_tap_dance_binding_pressed(struct zmk_behavior_binding *binding,
         if (cfg->trigger_each_binding) {
             behavior_keymap_binding_pressed(&tap_dance->config->behaviors[tap_dance->counter - 1],
                                             event);
+            reset_timer(tap_dance, event);
             return ZMK_BEHAVIOR_OPAQUE;
         }
     }
