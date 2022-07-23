@@ -83,6 +83,10 @@ For example, if you press `&mt LEFT_SHIFT A` and then release it without pressin
 };
 ```
 
+#### `hold-while-undecided`
+
+If enabled, the hold behavior will immediately be held, and will release before the tap behavior is sent. With modifiers (excluding the windows key) this will not affect typing, and is useful for mod + clicking.
+
 #### Positional hold-tap and `hold-trigger-key-positions`
 
 - Including `hold-trigger-key-positions` in your hold-tap definition turns on the positional hold-tap feature.
