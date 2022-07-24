@@ -72,6 +72,7 @@ struct active_hold_tap {
     uint32_t param_hold;
     uint32_t param_tap;
     int64_t timestamp;
+    bool hold_released;
     enum status status;
     const struct behavior_hold_tap_config *config;
     struct k_work_delayable work;
@@ -226,6 +227,7 @@ static struct active_hold_tap *store_hold_tap(uint32_t position, uint32_t param_
         active_hold_taps[i].config = config;
         active_hold_taps[i].param_hold = param_hold;
         active_hold_taps[i].param_tap = param_tap;
+        active_hold_taps[i].hold_released = false;
         active_hold_taps[i].timestamp = timestamp;
         active_hold_taps[i].position_of_first_other_key_pressed = -1;
         return &active_hold_taps[i];
@@ -436,6 +438,29 @@ static void decide_positional_hold(struct active_hold_tap *hold_tap) {
     hold_tap->status = STATUS_TAP;
 }
 
+static void release_hold_binding(struct active_hold_tap *hold_tap,
+                                 enum decision_moment decision_moment) {
+    bool keyTap =
+        !(hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT);
+    bool holdRelease =
+        (hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT);
+
+    if (hold_tap->config->hold_while_undecided && !hold_tap->hold_released) {
+        if (holdRelease || keyTap && decision_moment == HT_KEY_UP) {
+            LOG_DBG("Releasing hold behavior");
+            struct zmk_behavior_binding_event event = {
+                .position = hold_tap->position,
+                .timestamp = hold_tap->timestamp,
+            };
+            struct zmk_behavior_binding binding = {0};
+            binding.behavior_dev = hold_tap->config->hold_behavior_dev;
+            binding.param1 = hold_tap->param_hold;
+            behavior_keymap_binding_released(&binding, event);
+            hold_tap->hold_released = true;
+        }
+    }
+}
+
 static void decide_hold_tap(struct active_hold_tap *hold_tap,
                             enum decision_moment decision_moment) {
     if (hold_tap->status != STATUS_UNDECIDED) {
@@ -476,17 +501,7 @@ static void decide_hold_tap(struct active_hold_tap *hold_tap,
             decision_moment_str(decision_moment));
     undecided_hold_tap = NULL;
 
-    if (hold_tap->config->hold_while_undecided &&
-        !(hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT)) {
-        struct zmk_behavior_binding_event event = {
-            .position = hold_tap->position,
-            .timestamp = hold_tap->timestamp,
-        };
-        struct zmk_behavior_binding binding = {0};
-        binding.behavior_dev = hold_tap->config->hold_behavior_dev;
-        binding.param1 = hold_tap->param_hold;
-        behavior_keymap_binding_released(&binding, event);
-    }
+    release_hold_binding(hold_tap, decision_moment);
     press_binding(hold_tap);
     release_captured_events();
 }
@@ -494,17 +509,6 @@ static void decide_hold_tap(struct active_hold_tap *hold_tap,
 static void decide_retro_tap(struct active_hold_tap *hold_tap) {
     if (!hold_tap->config->retro_tap) {
         return;
-    }
-    if (hold_tap->config->hold_while_undecided &&
-        (hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT)) {
-        struct zmk_behavior_binding_event event = {
-            .position = hold_tap->position,
-            .timestamp = hold_tap->timestamp,
-        };
-        struct zmk_behavior_binding binding = {0};
-        binding.behavior_dev = hold_tap->config->hold_behavior_dev;
-        binding.param1 = hold_tap->param_hold;
-        behavior_keymap_binding_released(&binding, event);
     }
     if (hold_tap->status == STATUS_HOLD_TIMER) {
         release_binding(hold_tap);
@@ -587,6 +591,7 @@ static int on_hold_tap_binding_released(struct zmk_behavior_binding *binding,
     }
 
     decide_hold_tap(hold_tap, HT_KEY_UP);
+    release_hold_binding(hold_tap, HT_KEY_UP);
     decide_retro_tap(hold_tap);
     release_binding(hold_tap);
 
