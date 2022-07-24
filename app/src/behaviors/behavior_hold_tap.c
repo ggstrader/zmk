@@ -443,10 +443,11 @@ static void release_hold_binding(struct active_hold_tap *hold_tap,
     bool keyTap =
         !(hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT);
     bool holdRelease =
-        (hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT);
+        (hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT) &&
+        decision_moment == HT_KEY_UP;
 
     if (hold_tap->config->hold_while_undecided && !hold_tap->hold_released) {
-        if (holdRelease || keyTap && decision_moment == HT_KEY_UP) {
+        if (holdRelease || keyTap) {
             LOG_DBG("Releasing hold behavior");
             struct zmk_behavior_binding_event event = {
                 .position = hold_tap->position,
