@@ -446,19 +446,17 @@ static void release_hold_binding(struct active_hold_tap *hold_tap,
         (hold_tap->status == STATUS_HOLD_TIMER || hold_tap->status == STATUS_HOLD_INTERRUPT) &&
         decision_moment == HT_KEY_UP;
 
-    if (hold_tap->config->hold_while_undecided && !hold_tap->hold_released) {
-        if (holdRelease || keyTap) {
-            LOG_DBG("Releasing hold behavior");
-            struct zmk_behavior_binding_event event = {
-                .position = hold_tap->position,
-                .timestamp = hold_tap->timestamp,
-            };
-            struct zmk_behavior_binding binding = {0};
-            binding.behavior_dev = hold_tap->config->hold_behavior_dev;
-            binding.param1 = hold_tap->param_hold;
-            behavior_keymap_binding_released(&binding, event);
-            hold_tap->hold_released = true;
-        }
+    if (holdRelease || keyTap) {
+        LOG_DBG("Releasing hold behavior");
+        struct zmk_behavior_binding_event event = {
+            .position = hold_tap->position,
+            .timestamp = hold_tap->timestamp,
+        };
+        struct zmk_behavior_binding binding = {0};
+        binding.behavior_dev = hold_tap->config->hold_behavior_dev;
+        binding.param1 = hold_tap->param_hold;
+        behavior_keymap_binding_released(&binding, event);
+        hold_tap->hold_released = true;
     }
 }
 
@@ -502,7 +500,9 @@ static void decide_hold_tap(struct active_hold_tap *hold_tap,
             decision_moment_str(decision_moment));
     undecided_hold_tap = NULL;
 
-    release_hold_binding(hold_tap, decision_moment);
+    if (hold_tap->config->hold_while_undecided && !hold_tap->hold_released) {
+        release_hold_binding(hold_tap, decision_moment);
+    }
     press_binding(hold_tap);
     release_captured_events();
 }
@@ -592,7 +592,9 @@ static int on_hold_tap_binding_released(struct zmk_behavior_binding *binding,
     }
 
     decide_hold_tap(hold_tap, HT_KEY_UP);
-    release_hold_binding(hold_tap, HT_KEY_UP);
+    if (hold_tap->config->hold_while_undecided && !hold_tap->hold_released) {
+        release_hold_binding(hold_tap, HT_KEY_UP);
+    }
     decide_retro_tap(hold_tap);
     release_binding(hold_tap);
 
@@ -683,11 +685,9 @@ static int keycode_state_changed_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    if (undecided_hold_tap->first_press) {
+    if (undecided_hold_tap->first_press && undecided_hold_tap->config->hold_while_undecided) {
         undecided_hold_tap->first_press = false;
-        if (undecided_hold_tap->config->hold_while_undecided) {
-            return ZMK_EV_EVENT_BUBBLE;
-        }
+        return ZMK_EV_EVENT_BUBBLE;
     }
 
     // only key-up events will bubble through position_state_changed_listener
