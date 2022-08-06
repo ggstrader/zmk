@@ -64,6 +64,7 @@ struct behavior_hold_tap_config {
     char *retro_tap_behavior;
     uint32_t retro_tap_param1;
     uint32_t retro_tap_param2;
+    bool hold_trigger_on_release;
     int32_t hold_trigger_key_positions_len;
     int32_t hold_trigger_key_positions[];
 };
@@ -604,9 +605,10 @@ static int position_state_changed_listener(const zmk_event_t *eh) {
     }
 
     // Store the position of pressed key for positional hold-tap purposes.
-    if ((ev->state) // i.e. key pressed (not released)
+    if (((!undecided_hold_tap->config->hold_trigger_on_release && ev->state)     // key pressed
+         || (undecided_hold_tap->config->hold_trigger_on_release && !ev->state)) // key released
         && (undecided_hold_tap->position_of_first_other_key_pressed ==
-            -1) // i.e. no other key has been pressed yet
+            -1) // no other key has been pressed yet
     ) {
         undecided_hold_tap->position_of_first_other_key_pressed = ev->position;
     }
@@ -723,6 +725,7 @@ static int behavior_hold_tap_init(const struct device *dev) {
         .retro_tap_behavior = DT_INST_PROP(n, retro_tap_behavior),                                 \
         .retro_tap_param1 = DT_INST_PROP(n, retro_tap_param1),                                     \
         .retro_tap_param2 = DT_INST_PROP(n, retro_tap_param2),                                     \
+        .hold_trigger_on_release = DT_INST_PROP(n, hold_trigger_on_release),                       \
         .hold_trigger_key_positions = DT_INST_PROP(n, hold_trigger_key_positions),                 \
         .hold_trigger_key_positions_len = DT_INST_PROP_LEN(n, hold_trigger_key_positions),         \
     };                                                                                             \
