@@ -32,6 +32,7 @@ module.exports = {
       "behaviors/macros",
       "behaviors/leader-key",
       "behaviors/key-toggle",
+      "behaviors/turbo",
       "behaviors/sticky-key",
       "behaviors/sticky-layer",
       "behaviors/tri-state",
