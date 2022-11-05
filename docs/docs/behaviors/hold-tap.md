@@ -111,6 +111,13 @@ List of built-in behaviors and their corresponding label strings:
 - &to - "TO_LAYER"
 - &tog - "TOGGLE_LAYER"
 - &trans - "TRANS"
+#### `hold-while-undecided`
+
+If enabled, the hold behavior will immediately be held, and will release before the tap behavior is sent. With modifiers (excluding the windows key) this will not affect typing, and is useful for mod + clicking.
+
+:::note Alt behavior
+In some applications, pressing the alt key by itself will have its own behavior like activate a menu.
+:::
 
 #### Positional hold-tap and `hold-trigger-key-positions`
 
