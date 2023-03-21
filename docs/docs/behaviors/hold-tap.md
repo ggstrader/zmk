@@ -28,7 +28,7 @@ We call this the 'hold-preferred' flavor of hold-taps. While this flavor may wor
 
 - The 'hold-preferred' flavor triggers the hold behavior when the `tapping-term-ms` has expired or another key is pressed.
 - The 'balanced' flavor will trigger the hold behavior when the `tapping-term-ms` has expired or another key is pressed and released.
-- The 'tap-preferred' flavor triggers the hold behavior when the `tapping-term-ms` has expired. It triggers the tap behavior when another key is pressed.
+- The 'tap-preferred' flavor triggers the hold behavior when the `tapping-term-ms` has expired. Pressing another key within `tapping-term-ms` does not affect the decision.
 - The 'tap-unless-interrupted' flavor triggers a hold behavior only when another key is pressed before `tapping-term-ms` has expired. It triggers the tap behavior in all other situations.
 
 When the hold-tap key is released and the hold behavior has not been triggered, the tap behavior will trigger.
@@ -132,6 +132,9 @@ See the following example, which uses a hold-tap behavior definition, configured
 - The sequence `(pht_down, W_down, W_up, pht_up)` produces `W`. The normal hold behavior (LEFT_SHIFT) **is NOT** modified into a tap behavior (Q) by positional hold-tap because the first key pressed after the hold-tap key is the `W key`, which is in position 1, which **IS** included in `hold-trigger-key-positions`.
 - If the `LEFT_SHIFT / Q key` is held by itself for longer than `tapping-term-ms`, a hold behavior is produced. This is because positional hold-tap only modifies the behavior of a hold-tap if another key is pressed before the `tapping-term-ms` period expires.
 
+By default, `hold-trigger-key-positions` are evaluated upon the first _key press_ after
+the hold-tap. For homerow mods, this is not always ideal, because it prevents combining multiple modifiers unless they are included in `hold-trigger-key-positions`. To overwrite this behavior, one can set `hold-trigger-on-release`. If set to true, the evaluation of `hold-trigger-key-positions` gets delayed until _key release_. This allows combining multiple modifiers when the next key is _held_, while still deciding the hold-tap in favor of a tap when the next key is _tapped_.
+
 ### Example Use-Cases
 
 <Tabs
@@ -139,7 +142,7 @@ defaultValue="homerow_mods"
 values={[
 {label: 'Homerow Mods', value: 'homerow_mods'},
 {label: 'Autoshift', value: 'autoshift'},
-{label: 'Toggle-on-Tap, Momentary-on-Hold Layers', value: 'tog_mo'},
+{label: 'Toggle-on-Tap, Momentary-on-Hold Layers', value: 'mo_tog'},
 ]}>
 
 <TabItem value="homerow_mods">
@@ -276,25 +279,25 @@ A popular method of implementing Autoshift in ZMK involves a C-preprocessor macr
 
 </TabItem>
 
-<TabItem value="tog_mo">
+<TabItem value="mo_tog">
 
-This hold-tap example implements a [toggle-layer](layers.md/#toggle-layer) when the keybind is tapped and a [momentary-layer](layers.md/#momentary-layer) when it is held. Similarly to the Autoshift and Sticky Hold use-cases, a `TOG_MO(layer)` macro is defined such that the `&tog` and `&mo` behaviors can target a single layer.
+This hold-tap example implements a [momentary-layer](layers.md/#momentary-layer) when the keybind is held and a [toggle-layer](layers.md/#toggle-layer) when it is tapped. Similar to the Autoshift and Sticky Hold use-cases, a `MO_TOG(layer)` macro is defined such that the `&mo` and `&tog` behaviors can target a single layer.
 
-```dtsi title="Hold-Tap Example: Toggle layer on Tap, Momentary layer on Hold"
+```dtsi title="Hold-Tap Example: Momentary layer on Hold, Toggle layer on Tap"
 #include <dt-bindings/zmk/keys.h>
 #include <behaviors.dtsi>
 
-#define TOG_MO(layer) &tog_mo layer layer   // Macro to apply toggle-layer-on-tap/momentary-layer-on-hold to a specific layer
+#define MO_TOG(layer) &mo_tog layer layer   // Macro to apply momentary-layer-on-hold/toggle-layer-on-tap to a specific layer
 
 / {
     behaviors {
-        tog_mo: behavior_mo_tog {
+        mo_tog: behavior_mo_tog {
             compatible = "zmk,behavior-hold-tap";
             label = "mo_tog";
             #binding-cells = <2>;
             flavor = "hold-preferred";
             tapping-term-ms = <200>;
-            bindings = <&tog>, <&mo>;
+            bindings = <&mo>, <&tog>;
         };
     };
 
@@ -302,8 +305,8 @@ This hold-tap example implements a [toggle-layer](layers.md/#toggle-layer) when 
 		compatible = "zmk,keymap";
 		default_layer {
 			bindings = <
-	            &tog_mo 2 1     // &mo 2 on hold, &tog 1 on tap
-                TOG_MO(3)       // &mo 3 on hold, &tog 3 on tap
+				&mo_tog 2 1     // &mo 2 on hold, &tog 1 on tap
+				MO_TOG(3)       // &mo 3 on hold, &tog 3 on tap
 			>;
 		};
 	};

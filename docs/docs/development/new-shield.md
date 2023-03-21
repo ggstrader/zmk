@@ -6,6 +6,9 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import KeymapExampleFile from '../keymap-example-file.md';
 
+import InterconnectTabs from "@site/src/components/interconnect-tabs";
+import Metadata from "@site/src/data/hardware-metadata.json";
+
 ## Overview
 
 This guide will walk through the steps necessary to add ZMK support for a keyboard the uses a (Pro Micro compatible) addon MCU board to provide the microprocessor.
@@ -77,7 +80,7 @@ which controls the display name of the device over USB and BLE.
 The updated new default values should always be wrapped inside a conditional on the shield config name defined in the `Kconfig.shield` file. Here's the simplest example file.
 
 :::warning
-Do not make the keyboard name too long, otherwise the bluetooth advertising might fail and you will not be able to find your keyboard from your laptop / tablet.
+The keyboard name must be less than or equal to 16 characters in length, otherwise the bluetooth advertising might fail and you will not be able to find your keyboard from your device.
 :::
 
 ```
@@ -115,9 +118,7 @@ endif
 
 ## Shield Overlays
 
-![Labelled Pro Micro pins](../assets/pro-micro/pro-micro-pins-labelled.jpg)
-
-ZMK uses the blue color coded pin names to generate devicetree node references. For example, to refer to the node `0` in the devicetree files, use `&pro_micro 0`.
+<InterconnectTabs items={Metadata}/>
 
 <Tabs
 defaultValue="unibody"
@@ -437,6 +438,7 @@ left_encoder: encoder_left {
 		a-gpios = <PIN_A (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
 		b-gpios = <PIN_B (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
 		resolution = <4>;
+		status = "disabled";
 	};
 ```
 
